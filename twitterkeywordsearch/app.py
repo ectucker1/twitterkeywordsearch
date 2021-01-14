@@ -34,7 +34,7 @@ def search_tweets(collection, api, query, sort, target_count):
     # Track the number of results found so far
     found = 0
     # Call the search method, and iterate over results
-    for status in tweepy.Cursor(api.search, q=query, lang="en", result_type=sort,
+    for status in tweepy.Cursor(api.search, q=query, lang="en", result_type=sort, tweet_mode="extended",
                                 monitor_rate_limit=True, wait_on_rate_limit=True, wait_on_rate_limit_notify=True,
                                 retry_count=5, retry_delay=5).items():
         # Get raw JSON data of status
