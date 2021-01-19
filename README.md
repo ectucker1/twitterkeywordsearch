@@ -40,6 +40,10 @@ The `-o` parameter again specifies the collection to save the user information t
 This mode will skip over users who already have information saved to the output collection.
 This features allows for the process to recover after an error, power outage, etc.
 
+Some limits can be provided to decrease the time required to download user information.
+The number of follower and following IDs can be limited with the `-f1` and `-f2` arguments respectively.
+This prevents the script from hanging on users with an outsized number of followers or following accounts.
+
 ## Environment Configuration
 
 This script requires a .env file in the working directory with the following data:

@@ -29,7 +29,7 @@ def main():
         # Perform the search
         search_tweets(db[args.outcollection], api, query, args.sort, args.target)
     elif args.mode == 'users':
-        download_users(db[args.incollection], db[args.outcollection], api)
+        download_users(db[args.incollection], db[args.outcollection], api, args.maxfollowers, args.maxfollowing)
 
 
 def search_tweets(collection, api, query, sort, target_count):
@@ -51,7 +51,7 @@ def search_tweets(collection, api, query, sort, target_count):
             break
 
 
-def download_users(input_collection, output_collection, api):
+def download_users(input_collection, output_collection, api, max_followers, max_following):
     # Get the IDs of all users in the input collection
     users = set()
     for tweet in input_collection.find():
@@ -67,8 +67,8 @@ def download_users(input_collection, output_collection, api):
     # Create a thread for each piece of info to be downloaded
     profile_thread = Thread(target=process_profile, daemon=True, args=(users, output_collection, api))
     tweet_thread = Thread(target=process_tweets, daemon=True, args=(users, output_collection, api))
-    followers_thread = Thread(target=process_followers, daemon=True, args=(users, output_collection, api))
-    following_thread = Thread(target=process_following, daemon=True, args=(users, output_collection, api))
+    followers_thread = Thread(target=process_followers, daemon=True, args=(users, output_collection, api, max_followers))
+    following_thread = Thread(target=process_following, daemon=True, args=(users, output_collection, api, max_following))
 
     # Start up all the threads to download data
     profile_thread.start()
@@ -96,27 +96,27 @@ def process_tweets(users, output_collection, api):
                 output_collection.update_many({'id_str': user}, {'$set': {'tweets': tweets}})
 
 
-def process_followers(users, output_collection, api):
+def process_followers(users, output_collection, api, max):
     # For each user
     for user in users:
         # If there is not already a document for that user that has followers
         if output_collection.count_documents({'id_str': user, 'follower_ids': {'$exists': True}}) < 1:
             print(f"Downloading followers for ${user}")
             # Download the list of the user's followers
-            follower_ids = download_follower_ids(api, user)
+            follower_ids = download_follower_ids(api, user, max)
             if follower_ids is not None:
                 # Save the list of followers to that user's document in the database
                 output_collection.update_many({'id_str': user}, {'$set': {'follower_ids': follower_ids}})
 
 
-def process_following(users, output_collection, api):
+def process_following(users, output_collection, api, max):
     # For each user
     for user in users:
         # If there is not already a document for that user that has their following
         if output_collection.count_documents({'id_str': user, 'following_ids': {'$exists': True}}) < 1:
             print(f"Downloading following for ${user}")
             # Download the list of the user's following
-            following_ids = download_following_ids(api, user)
+            following_ids = download_following_ids(api, user, max)
             if following_ids is not None:
                 # Save the list of following to that user's document in the database
                 output_collection.update_many({'id_str': user}, {'$set': {'following_ids': following_ids}})
@@ -147,8 +147,12 @@ def parse_arguments():
                         help='the number of Tweets to stop after downloading (default: %(default)s)')
     parser.add_argument('--incollection', '-i', default='search',
                         help='the MongoDB collection to read a list of users from (default: %(default)s)')
-    parser.add_argument('--outcollection', '-o', default='search',
+    parser.add_argument('--outcollection', '-o', default='users',
                         help='the MongoDB collection to save the search results or user information to (default: %(default)s)')
+    parser.add_argument('--maxfollowers', '-f1', type=int, default=20000,
+                        help='the maximum number of follower ids to download in user mode (default: %(default)s)')
+    parser.add_argument('--maxfollowing', '-f2', type=int, default=20000,
+                        help='the maximum number of following ids to download in user mode (default: %(default)s)')
     return parser.parse_args()
 
 

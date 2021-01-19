@@ -22,7 +22,7 @@ def download_profile(api, id):
 
 
 # Return a list of all accounts following a given user
-def download_follower_ids(api, id):
+def download_follower_ids(api, id, max):
     try:
         # Download the ids of all accounts following this user
         follower_ids = []
@@ -30,6 +30,10 @@ def download_follower_ids(api, id):
                                   monitor_rate_limit=True, wait_on_rate_limit=True, wait_on_rate_limit_notify=True,
                                   retry_count=5, retry_delay=5).pages():
             follower_ids = follower_ids + page
+            # If more than the maximum number of follower accounts have been downloaded
+            if len(follower_ids) >= max:
+                # Stop downloading there
+                break
         return follower_ids
     # If there is an error in downloading, return None
     except tweepy.TweepError as ex:
@@ -41,7 +45,7 @@ def download_follower_ids(api, id):
 
 
 # Download a list of all accounts followed by a given user
-def download_following_ids(api, id):
+def download_following_ids(api, id, max):
     try:
         # Download the ids of all accounts being followed
         following_ids = []
@@ -49,6 +53,10 @@ def download_following_ids(api, id):
                                   monitor_rate_limit=True, wait_on_rate_limit=True, wait_on_rate_limit_notify=True,
                                   retry_count=5, retry_delay=5).pages():
             following_ids = following_ids + page
+            # If more than the maximum number of following accounts have been downloaded
+            if len(following_ids) >= max:
+                # Stop downloading there
+                break
         return following_ids
     # If there is an error in downloading, return None
     except tweepy.TweepError as ex:
