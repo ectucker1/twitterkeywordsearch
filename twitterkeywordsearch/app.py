@@ -29,7 +29,7 @@ def main():
         # Perform the search
         search_tweets(db[args.outcollection], api, query, args.sort, args.target)
     elif args.mode == 'users':
-        download_users(db[args.incollection], db[args.outcollection], api, args.maxfollowers, args.maxfollowing)
+        download_users(db[args.incollection], db[args.outcollection], api, args.maxfollowers, args.maxfollowing, args.lastyear)
 
 
 def search_tweets(collection, api, query, sort, target_count):
@@ -51,7 +51,7 @@ def search_tweets(collection, api, query, sort, target_count):
             break
 
 
-def download_users(input_collection, output_collection, api, max_followers, max_following):
+def download_users(input_collection, output_collection, api, max_followers, max_following, last_year):
     # Get the IDs of all users in the input collection
     users = set()
     for tweet in input_collection.find():
@@ -66,7 +66,7 @@ def download_users(input_collection, output_collection, api, max_followers, max_
 
     # Create a thread for each piece of info to be downloaded
     profile_thread = Thread(target=process_profile, daemon=True, args=(users, output_collection, api))
-    tweet_thread = Thread(target=process_tweets, daemon=True, args=(users, output_collection, api))
+    tweet_thread = Thread(target=process_tweets, daemon=True, args=(users, output_collection, api, last_year))
     followers_thread = Thread(target=process_followers, daemon=True, args=(users, output_collection, api, max_followers))
     following_thread = Thread(target=process_following, daemon=True, args=(users, output_collection, api, max_following))
 
@@ -83,14 +83,14 @@ def download_users(input_collection, output_collection, api, max_followers, max_
     following_thread.join()
 
 
-def process_tweets(users, output_collection, api):
+def process_tweets(users, output_collection, api, last_year):
     # For each user
     for user in users:
         # If there is not already a document for that user that has tweets
         if output_collection.count_documents({'id_str': user, 'tweets': {'$exists': True}}) < 1:
-            print(f"Downloading tweets for ${user}")
+            print(f"Downloading tweets for {user}")
             # Download the list of the user's tweets
-            tweets = download_tweets(api, user)
+            tweets = download_tweets(api, user, last_year)
             if tweets is not None:
                 # Save the list of tweets to that user's document in the database
                 output_collection.update_many({'id_str': user}, {'$set': {'tweets': tweets}})
@@ -101,7 +101,7 @@ def process_followers(users, output_collection, api, max):
     for user in users:
         # If there is not already a document for that user that has followers
         if output_collection.count_documents({'id_str': user, 'follower_ids': {'$exists': True}}) < 1:
-            print(f"Downloading followers for ${user}")
+            print(f"Downloading followers for {user}")
             # Download the list of the user's followers
             follower_ids = download_follower_ids(api, user, max)
             if follower_ids is not None:
@@ -114,7 +114,7 @@ def process_following(users, output_collection, api, max):
     for user in users:
         # If there is not already a document for that user that has their following
         if output_collection.count_documents({'id_str': user, 'following_ids': {'$exists': True}}) < 1:
-            print(f"Downloading following for ${user}")
+            print(f"Downloading following for {user}")
             # Download the list of the user's following
             following_ids = download_following_ids(api, user, max)
             if following_ids is not None:
@@ -127,7 +127,7 @@ def process_profile(users, output_collection, api):
     for user in users:
         # If there is not already a document for that user that has their profile information
         if output_collection.count_documents({'id_str': user, 'screen_name': {'$exists': True}}) < 1:
-            print(f"Downloading profile for ${user}")
+            print(f"Downloading profile for {user}")
             # Download the user's profile
             profile = download_profile(api, user)
             if profile is not None:
@@ -153,6 +153,8 @@ def parse_arguments():
                         help='the maximum number of follower ids to download in user mode (default: %(default)s)')
     parser.add_argument('--maxfollowing', '-f2', type=int, default=20000,
                         help='the maximum number of following ids to download in user mode (default: %(default)s)')
+    parser.add_argument('--lastyear', '-y', type=int, default=2000,
+                        help='the oldest year to download Tweets from in user mode (default: %(default)s)')
     return parser.parse_args()
 
 

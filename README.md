@@ -44,6 +44,9 @@ Some limits can be provided to decrease the time required to download user infor
 The number of follower and following IDs can be limited with the `-f1` and `-f2` arguments respectively.
 This prevents the script from hanging on users with an outsized number of followers or following accounts.
 
+Additionally, the target year can be set for the download with the `-y` parameter.
+Once a Tweet from before that year is downloaded, not further Tweets will be downloaded.
+
 ## Environment Configuration
 
 This script requires a .env file in the working directory with the following data:

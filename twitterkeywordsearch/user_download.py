@@ -68,7 +68,7 @@ def download_following_ids(api, id, max):
 
 
 # Downloads the most recent 3200 tweets from the user
-def download_tweets(api, id):
+def download_tweets(api, id, last_year):
     # Wrap calls to Twitter in try-except
     try:
         # Download the user's most recent tweets
@@ -78,6 +78,10 @@ def download_tweets(api, id):
                                   retry_count=5, retry_delay=5).pages():
             transformed = [transform_status(status._json) for status in page]
             tweets = tweets + transformed
+            # If the last tweet is older than the target
+            if tweets[-1]['created_at'].year < last_year:
+                # Don't download any more tweets
+                break
 
         # Return the list of tweets
         return tweets
