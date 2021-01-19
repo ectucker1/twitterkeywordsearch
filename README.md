@@ -30,7 +30,15 @@ This can be specified by the `-s` argument.
 
 ### Users Mode
 
-This mode is not yet implemented.
+The `users` mode downloads information on the users discovered by the search mode.
+This includes their profile, list of followed and following accounts, and most recent ~3000 Tweets.
+
+It requires the `-i` parameter to specify the collection where searched tweets were saved.
+
+The `-o` parameter again specifies the collection to save the user information to.
+
+This mode will skip over users who already have information saved to the output collection.
+This features allows for the process to recover after an error, power outage, etc.
 
 ## Environment Configuration
 
