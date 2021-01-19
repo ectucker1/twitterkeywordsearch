@@ -73,7 +73,7 @@ def download_tweets(api, id, last_year):
     try:
         # Download the user's most recent tweets
         tweets = []
-        for page in tweepy.Cursor(api.user_timeline, id=id,
+        for page in tweepy.Cursor(api.user_timeline, id=id, tweet_mode="extended",
                                   monitor_rate_limit=True, wait_on_rate_limit=True, wait_on_rate_limit_notify=True,
                                   retry_count=5, retry_delay=5).pages():
             transformed = [transform_status(status._json) for status in page]
