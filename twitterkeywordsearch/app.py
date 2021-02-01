@@ -6,7 +6,7 @@ from pymongo.errors import ServerSelectionTimeoutError
 import argparse
 from twitterkeywordsearch.query import load_query
 from twitterkeywordsearch.data_transform import transform_status, get_formatted_text
-from twitterkeywordsearch.user_download import download_profile, download_tweets, download_follower_ids, download_following_ids
+from twitterkeywordsearch.user_download import *
 from threading import Thread
 
 
@@ -29,7 +29,12 @@ def main():
         # Perform the search
         search_tweets(db[args.outcollection], api, query, args.sort, args.target)
     elif args.mode == 'users':
-        download_users(db[args.incollection], db[args.outcollection], api, args.maxfollowers, args.maxfollowing, args.lastyear)
+        # Download user data
+        incollection = None
+        if args.incollection is not None:
+            incollection = db[args.incollection]
+
+        download_users(incollection, args.userlist, db[args.outcollection], api, args.maxfollowers, args.maxfollowing, args.lastyear)
 
 
 def search_tweets(collection, api, query, sort, target_count):
@@ -51,11 +56,16 @@ def search_tweets(collection, api, query, sort, target_count):
             break
 
 
-def download_users(input_collection, output_collection, api, max_followers, max_following, last_year):
-    # Get the IDs of all users in the input collection
+def download_users(input_collection, input_file, output_collection, api, max_followers, max_following, last_year):
     users = set()
-    for tweet in input_collection.find():
-        users.add(tweet['user']['id_str'])
+    # Get the IDs of all users in the input collection
+    if input_collection is not None:
+        for tweet in input_collection.find():
+            users.add(tweet['user']['id_str'])
+    # Get the IDs of all users in the input text file
+    if input_file is not None:
+        for user in load_user_list(input_file):
+            users.add(user)
 
     # For each user in that collection
     for user in users:
@@ -144,8 +154,8 @@ def parse_arguments():
     parser.add_argument('--sort', '-s', default='popular', choices=['popular', 'recent', 'mixed'],
                         help='whether to favor popular tweets, recent tweets, or a mix (default: %(default)s)')
     parser.add_argument('--target', '-t', type=int, default=100000,
-                        help='the number of Tweets to stop after downloading (default: %(default)s)')
-    parser.add_argument('--incollection', '-i', default='search',
+                        help='the number of Tweets to stop after downloading in search mode (default: %(default)s)')
+    parser.add_argument('--incollection', '-i', default=None,
                         help='the MongoDB collection to read a list of users from (default: %(default)s)')
     parser.add_argument('--outcollection', '-o', default='users',
                         help='the MongoDB collection to save the search results or user information to (default: %(default)s)')
@@ -155,6 +165,8 @@ def parse_arguments():
                         help='the maximum number of following ids to download in user mode (default: %(default)s)')
     parser.add_argument('--lastyear', '-y', type=int, default=2000,
                         help='the oldest year to download Tweets from in user mode (default: %(default)s)')
+    parser.add_argument('--userlist', '-il', type=str, default=None,
+                        help='path to a text file to load user download IDs from (default: %(default)s)')
     return parser.parse_args()
 
 

@@ -92,3 +92,17 @@ def download_tweets(api, id, last_year):
         else:
             print(ex)
         return None
+
+
+# Loads a list of user ids from a file
+def load_user_list(path):
+    users = set()
+    # Open the file
+    with open(path, 'r') as file:
+        # For each line in the file
+        for name in file:
+            # Add that user ID to the list
+            name = name.strip()
+            if len(name) > 0:
+                users.add(name)
+    return users

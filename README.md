@@ -34,6 +34,7 @@ The `users` mode downloads information on the users discovered by the search mod
 This includes their profile, list of followed and following accounts, and most recent ~3000 Tweets.
 
 It requires the `-i` parameter to specify the collection where searched tweets were saved.
+Alternatively, you can specify `-il` to point to a text file with a list of user ids to download.
 
 The `-o` parameter again specifies the collection to save the user information to.
 
